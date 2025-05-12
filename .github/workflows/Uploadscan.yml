@@ -34,7 +34,7 @@ jobs:
         # A Veracode precisa que o código esteja compactado para o upload
 
       - name: Upload e scan na Veracode
-        uses: veracode/veracode-upload-and-scan-action@v1.1.5
+        uses:  veracode/veracode-uploadandscan-action@0.2.6
         with:
           appname: 'phpvulneravel02'
           createprofile: true

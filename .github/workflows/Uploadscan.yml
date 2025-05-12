@@ -1,0 +1,54 @@
+# Este workflow executa um 'Upload And Scan' na Veracode
+# Ou seja, ele envia o seu código PHP empacotado para a Veracode
+# e inicia uma análise completa baseada na política da plataforma
+
+name: Veracode Upload And Scan
+
+on:
+  push:
+    branches: [ "main" ]  # O workflow será acionado sempre que houver um push na branch main
+  workflow_dispatch:      # Também pode ser acionado manualmente no GitHub
+
+jobs:
+  veracode-upload-scan:
+    name: Veracode Upload And Scan
+    runs-on: ubuntu-latest  # Usa uma máquina virtual com Ubuntu como ambiente
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        # Este passo baixa o código-fonte do seu repositório para o ambiente da pipeline
+
+      - name: Instalar dependências PHP (se necessário)
+        run: |
+          if [ -f "composer.json" ]; then
+            composer install --no-interaction --no-progress
+          fi
+        # Caso seu projeto use Composer, ele instalará as dependências
+        # Se não houver um composer.json, este passo será ignorado
+
+      - name: Compactar o código PHP
+        run: |
+          zip -r upload.zip . -x "*.git*" "vendor/*"
+        # Este passo cria um arquivo ZIP com todo o código, ignorando pastas desnecessárias como .git e vendor
+        # A Veracode precisa que o código esteja compactado para o upload
+
+      - name: Upload e scan na Veracode
+        uses: veracode/veracode-upload-and-scan-action@v1.1.5
+        with:
+          appname: 'phpvulneravel02'
+          createprofile: true
+          filepath: 'upload.zip'
+          version: 'versao-${{ github.run_number }}'
+          vid: '${{ secrets.VERACODE_API_ID }}'
+          vkey: '${{ secrets.VERACODE_API_KEY }}'
+        # Este é o passo principal!
+        # Envia o upload.zip para a Veracode e inicia a análise
+        # appname: nome da aplicação (deve ser o mesmo cadastrado na Veracode)
+        # createprofile: se true, cria a aplicação na Veracode caso não exista
+        # version: uma versão única baseada no número da execução
+        # vid e vkey: suas credenciais armazenadas com segurança no GitHub
+
+      - name: Exibir sucesso
+        run: echo "Upload e análise enviados com sucesso para a Veracode!"
+        # Mensagem final para indicar que tudo correu bem (ou que pelo menos os passos anteriores foram executados)
